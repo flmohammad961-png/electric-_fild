@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>شبیه‌سازی میدان الکتریکی</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: rgba(30, 30, 50, 0.9);
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            padding: 30px;
+            max-width: 900px;
+            width: 100%;
+        }
+        
+        h1 {
+            color: #fff;
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 2em;
+        }
+        
+        .subtitle {
+            color: #aaa;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        canvas {
+            display: block;
+            margin: 0 auto;
+            border: 4px solid #444;
+            border-radius: 10px;
+            background: #0a0a1a;
+            cursor: move;
+            max-width: 100%;
+        }
+        
+        .controls {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 25px;
+        }
+        
+        button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            color: white;
+        }
+        
+        .btn-positive {
+            background: linear-gradient(135deg, #ff4444 0%, #cc0000 100%);
+        }
+        
+        .btn-positive:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255, 68, 68, 0.4);
+        }
+        
+        .btn-negative {
+            background: linear-gradient(135deg, #4488ff 0%, #0055cc 100%);
+        }
+        
+        .btn-negative:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(68, 136, 255, 0.4);
+        }
+        
+        .btn-reset {
+            background: linear-gradient(135deg, #666 0%, #444 100%);
+        }
+        
+        .btn-reset:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(100, 100, 100, 0.4);
+        }
+        
+        .info {
+            margin-top: 25px;
+            padding: 20px;
+            background: rgba(50, 50, 70, 0.6);
+            border-radius: 10px;
+            color: #ddd;
+        }
+        
+        .info h3 {
+            margin-bottom: 10px;
+            color: #fff;
+        }
+        
+        .info ul {
+            list-style: none;
+            padding-right: 0;
+        }
+        
+        .info li {
+            padding: 5px 0;
+            line-height: 1.6;
+        }
+        
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 1.5em;
+            }
+            
+            canvas {
+                width: 100%;
+                height: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>⚡ شبیه‌سازی میدان الکتریکی ⚡</h1>
+        <p class="subtitle">بارها را با موس جابجا کنید</p>
+        
+        <canvas id="canvas" width="800" height="600"></canvas>
+        
+        <div class="controls">
+            <button class="btn-positive" onclick="addCharge(1)">➕ افزودن بار مثبت</button>
+            <button class="btn-negative" onclick="addCharge(-1)">➕ افزودن بار منفی</button>
+            <button class="btn-reset" onclick="resetCharges()">🔄 بازنشانی</button>
+        </div>
+        
+        <div class="info">
+            <h3>📚 راهنما:</h3>
+            <ul>
+                <li>🔴 بار مثبت: خطوط میدان از آن خارج می‌شوند</li>
+                <li>🔵 بار منفی: خطوط میدان به آن وارد می‌شوند</li>
+                <li>✋ بارها را با موس بکشید و جابجا کنید</li>
+                <li>➕ می‌توانید بارهای جدید اضافه کنید</li>
+                <li>🔬 فضای شبیه‌سازی: دوبعدی (2D)</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        
+        let charges = [
+            { x: 200, y: 300, charge: 1, id: 1 },
+            { x: 600, y: 300, charge: -1, id: 2 }
+        ];
+        
+        let dragging = null;
+        let time = 0;
+        
+        setInterval(() => {
+            time += 0.05;
+            draw();
+        }, 50);
+        
+        function draw() {
+            const width = canvas.width;
+            const height = canvas.height;
+            
+            ctx.fillStyle = '#0a0a1a';
+            ctx.fillRect(0, 0, width, height);
+            
+            drawFieldLines();
+            
+            charges.forEach(charge => {
+                drawCharge(charge);
+            });
+        }
+        
+        function drawFieldLines() {
+            const numLines = 12;
+            
+            charges.forEach(charge => {
+                for (let i = 0; i < numLines; i++) {
+                    const angle = (i / numLines) * Math.PI * 2;
+                    drawFieldLine(charge, angle);
+                }
+            });
+        }
+        
+        function drawFieldLine(startCharge, angle) {
+            const maxSteps = 100;
+            const stepSize = 3;
+            let x = startCharge.x + Math.cos(angle) * 25;
+            let y = startCharge.y + Math.sin(angle) * 25;
+            
+            const points = [];
+            
+            for (let step = 0; step < maxSteps; step++) {
+                if (x < 0 || x > canvas.width || y < 0 || y > canvas.height) break;
+                
+                let hitCharge = false;
+                for (let charge of charges) {
+                    const dx = x - charge.x;
+                    const dy = y - charge.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    if (dist < 20) {
+                        hitCharge = true;
+                        break;
+                    }
+                }
+                if (hitCharge) break;
+                
+                points.push({ x, y });
+                
+                let Ex = 0, Ey = 0;
+                charges.forEach(charge => {
+                    const dx = x - charge.x;
+                    const dy = y - charge.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    if (dist > 5) {
+                        const E = charge.charge / (dist * dist);
+                        Ex += E * dx / dist;
+                        Ey += E * dy / dist;
+                    }
+                });
+                
+                const E_mag = Math.sqrt(Ex * Ex + Ey * Ey);
+                if (E_mag > 0) {
+                    Ex /= E_mag;
+                    Ey /= E_mag;
+                }
+                
+                if (startCharge.charge > 0) {
+                    x += Ex * stepSize;
+                    y += Ey * stepSize;
+                } else {
+                    x -= Ex * stepSize;
+                    y -= Ey * stepSize;
+                }
+            }
+            
+            if (points.length > 1) {
+                const gradient = ctx.createLinearGradient(
+                    points[0].x, points[0].y,
+                    points[points.length - 1].x, points[points.length - 1].y
+                );
+                
+                if (startCharge.charge > 0) {
+                    gradient.addColorStop(0, 'rgba(255, 50, 50, 0.6)');
+                    gradient.addColorStop(1, 'rgba(255, 50, 50, 0.1)');
+                } else {
+                    gradient.addColorStop(0, 'rgba(50, 150, 255, 0.6)');
+                    gradient.addColorStop(1, 'rgba(50, 150, 255, 0.1)');
+                }
+                
+                ctx.strokeStyle = gradient;
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                
+                for (let i = 0; i < points.length; i++) {
+                    if (i === 0) {
+                        ctx.moveTo(points[i].x, points[i].y);
+                    } else {
+                        ctx.lineTo(points[i].x, points[i].y);
+                    }
+                }
+                ctx.stroke();
+                
+                if (points.length > 5) {
+                    const p1 = points[points.length - 1];
+                    const p2 = points[points.length - 3];
+                    const dx = p1.x - p2.x;
+                    const dy = p1.y - p2.y;
+                    const angle = Math.atan2(dy, dx);
+                    
+                    ctx.fillStyle = startCharge.charge > 0 ? 'rgba(255, 50, 50, 0.8)' : 'rgba(50, 150, 255, 0.8)';
+                    ctx.beginPath();
+                    ctx.moveTo(p1.x, p1.y);
+                    ctx.lineTo(
+                        p1.x - 10 * Math.cos(angle - 0.3),
+                        p1.y - 10 * Math.sin(angle - 0.3)
+                    );
+                    ctx.lineTo(
+                        p1.x - 10 * Math.cos(angle + 0.3),
+                        p1.y - 10 * Math.sin(angle + 0.3)
+                    );
+                    ctx.closePath();
+                    ctx.fill();
+                }
+            }
+        }
+        
+        function drawCharge(charge) {
+            const radius = 20;
+            
+            const gradient = ctx.createRadialGradient(
+                charge.x, charge.y, 0,
+                charge.x, charge.y, radius * 2
+            );
+            
+            if (charge.charge > 0) {
+                gradient.addColorStop(0, 'rgba(255, 50, 50, 0.8)');
+                gradient.addColorStop(0.5, 'rgba(255, 50, 50, 0.4)');
+                gradient.addColorStop(1, 'rgba(255, 50, 50, 0)');
+            } else {
+                gradient.addColorStop(0, 'rgba(50, 150, 255, 0.8)');
+                gradient.addColorStop(0.5, 'rgba(50, 150, 255, 0.4)');
+                gradient.addColorStop(1, 'rgba(50, 150, 255, 0)');
+            }
+            
+            ctx.fillStyle = gradient;
+            ctx.beginPath();
+            ctx.arc(charge.x, charge.y, radius * 2, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.fillStyle = charge.charge > 0 ? '#ff3333' : '#3388ff';
+            ctx.beginPath();
+            ctx.arc(charge.x, charge.y, radius, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 24px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(charge.charge > 0 ? '+' : '−', charge.x, charge.y);
+        }
+        
+        canvas.addEventListener('mousedown', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            const clicked = charges.find(charge => {
+                const dx = x - charge.x;
+                const dy = y - charge.y;
+                return Math.sqrt(dx * dx + dy * dy) < 20;
+            });
+            
+            if (clicked) {
+                dragging = clicked.id;
+            }
+        });
+        
+        canvas.addEventListener('mousemove', (e) => {
+            if (dragging === null) return;
+            
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            charges = charges.map(charge => 
+                charge.id === dragging ? { ...charge, x, y } : charge
+            );
+        });
+        
+        canvas.addEventListener('mouseup', () => {
+            dragging = null;
+        });
+        
+        canvas.addEventListener('mouseleave', () => {
+            dragging = null;
+        });
+        
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            const rect = canvas.getBoundingClientRect();
+            const touch = e.touches[0];
+            const x = touch.clientX - rect.left;
+            const y = touch.clientY - rect.top;
+            
+            const clicked = charges.find(charge => {
+                const dx = x - charge.x;
+                const dy = y - charge.y;
+                return Math.sqrt(dx * dx + dy * dy) < 20;
+            });
+            
+            if (clicked) {
+                dragging = clicked.id;
+            }
+        });
+        
+        canvas.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            if (dragging === null) return;
+            
+            const rect = canvas.getBoundingClientRect();
+            const touch = e.touches[0];
+            const x = touch.clientX - rect.left;
+            const y = touch.clientY - rect.top;
+            
+            charges = charges.map(charge => 
+                charge.id === dragging ? { ...charge, x, y } : charge
+            );
+        });
+        
+        canvas.addEventListener('touchend', () => {
+            dragging = null;
+        });
+        
+        function addCharge(type) {
+            const newCharge = {
+                x: 400,
+                y: 300,
+                charge: type,
+                id: Date.now()
+            };
+            charges.push(newCharge);
+        }
+        
+        function resetCharges() {
+            charges = [
+                { x: 200, y: 300, charge: 1, id: 1 },
+                { x: 600, y: 300, charge: -1, id: 2 }
+            ];
+        }
+        
+        draw();
+    </script>
+</body>
+</html>
