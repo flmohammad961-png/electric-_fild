@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>شبیه‌سازی میدان الکتریکی</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: rgba(30, 30, 50, 0.9);
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            padding: 30px;
+            max-width: 900px;
+            width: 100%;
+        }
+        
+        h1 {
+            color: #fff;
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 2em;
+        }
+        
+        .subtitle {
+            color: #aaa;
+            text-align: center;
+            margin-bottom: 15px;
+            font-size: 14px;
+        }
+        
+        .selected-info {
+            color: #ffdd44;
+            text-align: center;
+            margin-bottom: 15px;
+            font-size: 15px;
+            font-weight: bold;
+            min-height: 20px;
+        }
+        
+        canvas {
+            display: block;
+            margin: 0 auto;
+            border: 4px solid #444;
+            border-radius: 10px;
+            background: #0a0a1a;
+            cursor: grab;
+            max-width: 100%;
+            touch-action: none;
+        }
+        
+        canvas.selected {
+            border-color: #ffdd44;
+            box-shadow: 0 0 20px rgba(255, 221, 68, 0.5);
+        }
+        
+        canvas:active {
+            cursor: grabbing;
+        }
+        
+        .controls {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 25px;
+        }
+        
+        button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            color: white;
+        }
+        
+        .btn-positive {
+            background: linear-gradient(135deg, #ff4444 0%, #cc0000 100%);
+        }
+        
+        .btn-positive:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255, 68, 68, 0.4);
+        }
+        
+        .btn-negative {
+            background: linear-gradient(135deg, #4488ff 0%, #0055cc 100%);
+        }
+        
+        .btn-negative:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(68, 136, 255, 0.4);
+        }
+        
+        .btn-reset {
+            background: linear-gradient(135deg, #ff6644 0%, #cc3300 100%);
+        }
+        
+        .btn-reset:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255, 102, 68, 0.4);
+        }
+        
+        .btn-size-up {
+            background: linear-gradient(135deg, #44ff88 0%, #00cc44 100%);
+        }
+        
+        .btn-size-up:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(68, 255, 136, 0.4);
+        }
+        
+        .btn-size-down {
+            background: linear-gradient(135deg, #ffaa44 0%, #cc7700 100%);
+        }
+        
+        .btn-size-down:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255, 170, 68, 0.4);
+        }
+        
+        .info {
+            margin-top: 25px;
+            padding: 20px;
+            background: rgba(50, 50, 70, 0.6);
+            border-radius: 10px;
+            color: #ddd;
+        }
+        
+        .info h3 {
+            margin-bottom: 10px;
+            color: #fff;
+        }
+        
+        .info ul {
+            list-style: none;
+            padding-right: 0;
+        }
+        
+        .info li {
+            padding: 5px 0;
+            line-height: 1.6;
+        }
+        
+        .creator {
+            margin-top: 20px;
+            padding: 20px;
+            background: linear-gradient(135deg, rgba(150, 50, 200, 0.7), rgba(100, 20, 150, 0.7));
+            border-radius: 10px;
+            text-align: center;
+            border: 3px solid rgba(200, 100, 255, 0.6);
+            box-shadow: 0 5px 20px rgba(150, 50, 200, 0.4);
+        }
+        
+        .creator-title {
+            color: #ffdd44;
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+        
+        .creator-name {
+            color: white;
+            font-size: 22px;
+            font-weight: bold;
+            margin: 8px 0;
+        }
+        
+        .creator-detail {
+            color: #ddddff;
+            font-size: 16px;
+            line-height: 1.6;
+        }
+        
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 1.5em;
+            }
+            
+            canvas {
+                width: 100%;
+                height: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>⚡ شبیه‌سازی میدان الکتریکی ⚡</h1>
+        <p class="subtitle">بارها را با لمس (موبایل) یا موس (کامپیوتر) جابجا کنید</p>
+        <p class="selected-info" id="selectedInfo"></p>
+        
+        <canvas id="canvas" width="800" height="600"></canvas>
+        
+        <div class="controls">
+            <button class="btn-positive" onclick="addCharge(1)">➕ افزودن بار مثبت</button>
+            <button class="btn-negative" onclick="addCharge(-1)">➕ افزودن بار منفی</button>
+            <button class="btn-size-up" onclick="changeChargeSize(1.3)">🔼 بزرگتر کردن بار انتخابی</button>
+            <button class="btn-size-down" onclick="changeChargeSize(0.7)">🔽 کوچکتر کردن بار انتخابی</button>
+            <button class="btn-reset" onclick="resetCharges()">🗑️ پاک کردن همه</button>
+        </div>
+        
+        <div class="info">
+            <h3>📚 راهنما:</h3>
+            <ul>
+                <li>➕ <strong>افزودن:</strong> دکمه مثبت/منفی → بار وسط صفحه ظاهر می‌شود</li>
+                <li>✋ <strong>جابجایی:</strong> بار را بگیرید و بکشید</li>
+                <li>🎯 <strong>انتخاب:</strong> روی بار کلیک کنید (حاشیه زرد می‌شود)</li>
+                <li>🔼🔽 <strong>تغییر اندازه:</strong> بار را انتخاب کنید، سپس دکمه‌های بزرگتر/کوچکتر</li>
+                <li>⚡ <strong>خطوط میدان:</strong> از بار مثبت خارج و به بار منفی وارد می‌شوند</li>
+                <li>🗑️ <strong>پاک کردن:</strong> حذف همه بارها</li>
+            </ul>
+        </div>
+        
+        <div class="creator">
+            <div class="creator-title">🎓 طراح و سازنده</div>
+            <div class="creator-name">محمد فلاح لاله‌زاری</div>
+            <div class="creator-detail">
+                دبیر فیزیک<br>
+                شهرستان راور - استان کرمان
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        
+        let charges = []; // ابتدا خالی است
+        let dragging = null;
+        let time = 0;
+        let selectedCharge = null; // بار انتخاب شده برای تغییر اندازه
+        
+        // انیمیشن
+        setInterval(() => {
+            time += 0.05;
+            draw();
+        }, 50);
+        
+        function draw() {
+            const width = canvas.width;
+            const height = canvas.height;
+            
+            // پاک کردن صفحه
+            ctx.fillStyle = '#0a0a1a';
+            ctx.fillRect(0, 0, width, height);
+            
+            // رسم خطوط میدان (فقط اگر بار وجود داشته باشد)
+            if (charges.length > 0) {
+                drawFieldLines();
+            }
+            
+            // رسم بارها
+            charges.forEach(charge => {
+                drawCharge(charge, charge.id === selectedCharge);
+            });
+            
+            // بروزرسانی اطلاعات بار انتخابی
+            updateSelectedInfo();
+        }
+        
+        function drawFieldLines() {
+            const numLines = 16; // تعداد بیشتر برای دقت بهتر
+            
+            charges.forEach(charge => {
+                // تعداد خطوط متناسب با اندازه بار
+                const linesForCharge = Math.max(8, Math.round(numLines * (charge.radius / 20)));
+                for (let i = 0; i < linesForCharge; i++) {
+                    const angle = (i / linesForCharge) * Math.PI * 2;
+                    drawFieldLine(charge, angle);
+                }
+            });
+        }
+        
+        function drawFieldLine(startCharge, angle) {
+            const maxSteps = 150;
+            const stepSize = 2.5;
+            let x = startCharge.x + Math.cos(angle) * (startCharge.radius + 5);
+            let y = startCharge.y + Math.sin(angle) * (startCharge.radius + 5);
+            
+            const points = [];
+            
+            for (let step = 0; step < maxSteps; step++) {
+                if (x < 0 || x > canvas.width || y < 0 || y > canvas.height) break;
+                
+                // بررسی برخورد با بار دیگر
+                let hitCharge = false;
+                for (let charge of charges) {
+                    const dx = x - charge.x;
+                    const dy = y - charge.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    if (dist < charge.radius - 2) {
+                        hitCharge = true;
+                        break;
+                    }
+                }
+                if (hitCharge) break;
+                
+                points.push({ x, y });
+                
+                // محاسبه میدان الکتریکی (با توجه به اندازه بار)
+                let Ex = 0, Ey = 0;
+                charges.forEach(charge => {
+                    const dx = x - charge.x;
+                    const dy = y - charge.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    if (dist > 5) {
+                        // شدت میدان متناسب با اندازه بار (q = radius^2)
+                        const q = charge.charge * (charge.radius * charge.radius) / 400;
+                        const E = q / (dist * dist);
+                        Ex += E * dx / dist;
+                        Ey += E * dy / dist;
+                    }
+                });
+                
+                const E_mag = Math.sqrt(Ex * Ex + Ey * Ey);
+                if (E_mag > 0) {
+                    Ex /= E_mag;
+                    Ey /= E_mag;
+                }
+                
+                // حرکت در جهت میدان
+                if (startCharge.charge > 0) {
+                    x += Ex * stepSize;
+                    y += Ey * stepSize;
+                } else {
+                    x -= Ex * stepSize;
+                    y -= Ey * stepSize;
+                }
+            }
+            
+            // رسم خط میدان
+            if (points.length > 1) {
+                // ضخامت خط متناسب با اندازه بار
+                const lineWidth = Math.max(1.5, Math.min(4, startCharge.radius / 10));
+                
+                // شفافیت متناسب با اندازه بار
+                const opacity = Math.min(0.8, 0.4 + (startCharge.radius / 80));
+                
+                const gradient = ctx.createLinearGradient(
+                    points[0].x, points[0].y,
+                    points[points.length - 1].x, points[points.length - 1].y
+                );
+                
+                if (startCharge.charge > 0) {
+                    gradient.addColorStop(0, `rgba(255, 50, 50, ${opacity})`);
+                    gradient.addColorStop(1, `rgba(255, 50, 50, ${opacity * 0.2})`);
+                } else {
+                    gradient.addColorStop(0, `rgba(50, 150, 255, ${opacity})`);
+                    gradient.addColorStop(1, `rgba(50, 150, 255, ${opacity * 0.2})`);
+                }
+                
+                ctx.strokeStyle = gradient;
+                ctx.lineWidth = lineWidth;
+                ctx.beginPath();
+                
+                for (let i = 0; i < points.length; i++) {
+                    if (i === 0) {
+                        ctx.moveTo(points[i].x, points[i].y);
+                    } else {
+                        ctx.lineTo(points[i].x, points[i].y);
+                    }
+                }
+                ctx.stroke();
+                
+                // رسم پیکان (با اندازه متناسب)
+                if (points.length > 5) {
+                    const p1 = points[points.length - 1];
+                    const p2 = points[points.length - 3];
+                    const dx = p1.x - p2.x;
+                    const dy = p1.y - p2.y;
+                    const angle = Math.atan2(dy, dx);
+                    const arrowSize = 8 + (startCharge.radius / 10);
+                    
+                    ctx.fillStyle = startCharge.charge > 0 ? `rgba(255, 50, 50, ${opacity})` : `rgba(50, 150, 255, ${opacity})`;
+                    ctx.beginPath();
+                    ctx.moveTo(p1.x, p1.y);
+                    ctx.lineTo(
+                        p1.x - arrowSize * Math.cos(angle - 0.3),
+                        p1.y - arrowSize * Math.sin(angle - 0.3)
+                    );
+                    ctx.lineTo(
+                        p1.x - arrowSize * Math.cos(angle + 0.3),
+                        p1.y - arrowSize * Math.sin(angle + 0.3)
+                    );
+                    ctx.closePath();
+                    ctx.fill();
+                }
+            }
+        }
+        
+        function drawCharge(charge, isSelected) {
+            const radius = charge.radius;
+            
+            // حاشیه زرد برای بار انتخابی
+            if (isSelected) {
+                ctx.strokeStyle = '#ffdd44';
+                ctx.lineWidth = 4;
+                ctx.beginPath();
+                ctx.arc(charge.x, charge.y, radius + 8, 0, Math.PI * 2);
+                ctx.stroke();
+            }
+            
+            // سایه درخشان
+            const gradient = ctx.createRadialGradient(
+                charge.x, charge.y, 0,
+                charge.x, charge.y, radius * 2
+            );
+            
+            if (charge.charge > 0) {
+                gradient.addColorStop(0, 'rgba(255, 50, 50, 0.8)');
+                gradient.addColorStop(0.5, 'rgba(255, 50, 50, 0.4)');
+                gradient.addColorStop(1, 'rgba(255, 50, 50, 0)');
+            } else {
+                gradient.addColorStop(0, 'rgba(50, 150, 255, 0.8)');
+                gradient.addColorStop(0.5, 'rgba(50, 150, 255, 0.4)');
+                gradient.addColorStop(1, 'rgba(50, 150, 255, 0)');
+            }
+            
+            ctx.fillStyle = gradient;
+            ctx.beginPath();
+            ctx.arc(charge.x, charge.y, radius * 2, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // دایره اصلی
+            ctx.fillStyle = charge.charge > 0 ? '#ff3333' : '#3388ff';
+            ctx.beginPath();
+            ctx.arc(charge.x, charge.y, radius, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            
+            // نمایش علامت
+            ctx.fillStyle = '#ffffff';
+            ctx.font = `bold ${radius * 1.2}px Arial`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(charge.charge > 0 ? '+' : '−', charge.x, charge.y);
+        }
+        
+        // دریافت موقعیت (برای موس و لمس)
+        function getPosition(e) {
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            return {
+                x: (clientX - rect.left) * scaleX,
+                y: (clientY - rect.top) * scaleY
+            };
+        }
+        
+        // شروع کشیدن (موس و لمس)
+        function handleStart(e) {
+            const pos = getPosition(e);
+            
+            const clicked = charges.find(charge => {
+                const dx = pos.x - charge.x;
+                const dy = pos.y - charge.y;
+                return Math.sqrt(dx * dx + dy * dy) < charge.radius;
+            });
+            
+            if (clicked) {
+                // اگر shift فشرده نشده، شروع به کشیدن می‌کنیم
+                if (!e.shiftKey) {
+                    dragging = clicked.id;
+                }
+                // بار را انتخاب می‌کنیم
+                selectedCharge = clicked.id;
+                canvas.classList.add('selected');
+            } else {
+                // اگر جای خالی کلیک شد، انتخاب را لغو می‌کنیم
+                selectedCharge = null;
+                canvas.classList.remove('selected');
+            }
+        }
+        
+        // حرکت دادن (موس و لمس)
+        function handleMove(e) {
+            if (dragging === null) return;
+            e.preventDefault();
+            
+            const pos = getPosition(e);
+            
+            charges = charges.map(charge => 
+                charge.id === dragging ? { ...charge, x: pos.x, y: pos.y } : charge
+            );
+        }
+        
+        // پایان کشیدن (موس و لمس)
+        function handleEnd() {
+            dragging = null;
+        }
+        
+        // رویدادهای موس
+        canvas.addEventListener('mousedown', handleStart);
+        canvas.addEventListener('mousemove', handleMove);
+        canvas.addEventListener('mouseup', handleEnd);
+        canvas.addEventListener('mouseleave', handleEnd);
+        
+        // رویدادهای لمس (موبایل)
+        canvas.addEventListener('touchstart', handleStart);
+        canvas.addEventListener('touchmove', handleMove);
+        canvas.addEventListener('touchend', handleEnd);
+        
+        // افزودن بار جدید
+        function addCharge(type) {
+            const newCharge = {
+                x: canvas.width / 2,
+                y: canvas.height / 2,
+                charge: type,
+                radius: 20, // اندازه پیش‌فرض
+                id: Date.now()
+            };
+            charges.push(newCharge);
+            // بار جدید را به طور خودکار انتخاب می‌کنیم
+            selectedCharge = newCharge.id;
+            canvas.classList.add('selected');
+        }
+        
+        // تغییر اندازه بار انتخابی
+        function changeChargeSize(factor) {
+            if (selectedCharge === null) {
+                alert('لطفاً ابتدا یک بار را با کلیک روی آن انتخاب کنید!');
+                return;
+            }
+            
+            charges = charges.map(charge => {
+                if (charge.id === selectedCharge) {
+                    const newRadius = charge.radius * factor;
+                    // بدون محدودیت! از 2 تا 200 پیکسل
+                    return {
+                        ...charge,
+                        radius: Math.max(2, Math.min(200, newRadius))
+                    };
+                }
+                return charge;
+            });
+        }
+        
+        // بروزرسانی اطلاعات بار انتخابی
+        function updateSelectedInfo() {
+            const infoElement = document.getElementById('selectedInfo');
+            if (selectedCharge === null) {
+                infoElement.textContent = '';
+            } else {
+                const charge = charges.find(c => c.id === selectedCharge);
+                if (charge) {
+                    const type = charge.charge > 0 ? 'مثبت' : 'منفی';
+                    const size = Math.round(charge.radius);
+                    infoElement.textContent = `بار انتخاب شده: ${type} | اندازه: ${size}`;
+                } else {
+                    infoElement.textContent = '';
+                }
+            }
+        }
+        
+        // پاک کردن همه بارها
+        function resetCharges() {
+            charges = [];
+            selectedCharge = null;
+            canvas.classList.remove('selected');
+        }
+        
+        // شروع انیمیشن
+        draw();
+    </script>
+</body>
+</html>
